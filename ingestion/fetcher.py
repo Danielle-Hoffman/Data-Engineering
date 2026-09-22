@@ -20,3 +20,15 @@ def get_twitch_token():
     response = requests.post(url, params=params)
     response.raise_for_status()
     return response.json()["access_token"]
+
+def fetch_live_streams(token):
+    """Fetches the top 100 live streams currently on Twitch."""
+    url = "https://api.twitch.tv/helix/streams"
+    headers = {
+        "Client-Id": CLIENT_ID,
+        "Authorization": f"Bearer {token}"
+    }
+    params = {"first": 100} 
+    response = requests.get(url, headers=headers, params=params)
+    response.raise_for_status()
+    return response.json()["data"]
