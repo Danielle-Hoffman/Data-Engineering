@@ -38,36 +38,54 @@ def save_to_db(streams):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
+    inserted_count = 0
+    
     for stream in streams:
-        game_name = stream.get("game_name") or "Just Chatting"
+        game_name = stream.get("game_name")
+        
+        # 1. The IRL Blocklist
+        irl_categories = [
+            "Just Chatting", "ASMR", "Art", "Music", "Sports", 
+            "Special Events", "Talk Shows & Podcasts", "I'm Only Sleeping",
+            "Pools, Hot Tubs, and Beaches", "Animals, Aquariums, and Zoos"
+        ]
+        
+        # Skip if it's on the blocklist or has no category at all
+        if game_name in irl_categories or not game_name:
+            continue
+            
         broadcaster = stream.get("user_name")
         title = stream.get("title")
         viewers = stream.get("viewer_count")
         
-        # Twitch returns a template URL we inject standard dimensions (320x180)
+        # Twitch returns a template URL. We inject standard dimensions (320x180)
         thumbnail = stream.get("thumbnail_url").replace("{width}", "320").replace("{height}", "180")
         stream_url = f"https://twitch.tv/{broadcaster}"
 
-        # 1. Ensure category exists and get its ID
+        # 2. Ensure category exists and get its ID
         cursor.execute("INSERT OR IGNORE INTO categories (category_name) VALUES (?)", (game_name,))
         cursor.execute("SELECT category_id FROM categories WHERE category_name = ?", (game_name,))
         category_id = cursor.fetchone()[0]
 
-        # 2. Ensure channel exists and get its ID
+        # 3. Ensure channel exists and get its ID
         cursor.execute("INSERT OR IGNORE INTO channels (broadcaster_name) VALUES (?)", (broadcaster,))
         cursor.execute("SELECT channel_id FROM channels WHERE broadcaster_name = ?", (broadcaster,))
         channel_id = cursor.fetchone()[0]
 
-        # 3. Insert the live snapshot metric
+        # 4. Insert the live snapshot metric
         cursor.execute("""
             INSERT INTO live_snapshots (category_id, channel_id, stream_title, viewer_count, thumbnail_url, stream_url)
             VALUES (?, ?, ?, ?, ?, ?)
         """, (category_id, channel_id, title, viewers, thumbnail, stream_url))
+        
+        inserted_count += 1
 
     conn.commit()
     conn.close()
-    print(f"✅ Successfully inserted {len(streams)} live streams into the database.")
-
+    
+    # Calculate how many were skipped to show in the terminal
+    skipped = len(streams) - inserted_count
+    print(f"✅ Successfully inserted {inserted_count} gaming streams (Filtered out {skipped} IRL streams).")
 if __name__ == "__main__":
     print("Authenticating with Twitch...")
     token = get_twitch_token()

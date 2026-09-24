@@ -36,3 +36,16 @@ def get_live_streams(limit: int = 24, db: sqlite3.Connection = Depends(get_db)):
         LIMIT ?
     """, (limit,))
     return [dict(row) for row in cursor.fetchall()]
+
+@app.get("/api/suggestions")
+def get_suggestions(db: sqlite3.Connection = Depends(get_db)):
+    """Recommendation Engine: High opportunity score + proven audience."""
+    cursor = db.cursor()
+    cursor.execute("""
+        SELECT category_name, total_viewers, active_streams, opportunity_score 
+        FROM vw_category_opportunity
+        WHERE total_viewers > 500 
+        ORDER BY opportunity_score DESC
+        LIMIT 6
+    """)
+    return [dict(row) for row in cursor.fetchall()]
