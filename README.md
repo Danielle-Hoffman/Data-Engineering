@@ -34,8 +34,34 @@ stream-pulse/
     ##How do I run this?
     Okay so I need you to listen cause its still in development. Okay! so: 
 
-    1. open the files and make sure you install the requirements txt 
+    1. Setup Environment & Dependencies
+Open your terminal in the project root and isolate your Python environment:
 
-    2. Once thats done make sure you have live server installed or like anthing that'll allow you to view it in port 5000 
+Bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+2. Configure API Keys
+Create a .env file in the root directory and add your Twitch credentials:
 
-    3. run it and bam! you can now view the project
+Ini, TOML
+TWITCH_CLIENT_ID=your_client_id_here
+TWITCH_APP_SECRET=your_app_secret_here
+3. Initialize Database & Fetch Data
+Build the local SQLite database and populate it with a live batch of Twitch data:
+
+Bash
+# Build the tables and views
+sqlite3 lobbystats.db < db/schema.sql
+
+# Ingest live streams (filters out non-gaming IRL categories)
+python ingestion/fetcher.py
+4. Start the Backend API
+Keep your virtual environment active and start the FastAPI server:
+
+Bash
+uvicorn backend.main:app --reload
+The API is now listening on http://127.0.0.1:8000.
+
+5. Launch the Frontend Dashboard
+With the backend running, open the frontend/index.html file. You can do this by right-clicking the file in VS Code and selecting Open with Live Server (which typically hosts on port 5500), or by simply double-clicking the HTML file in your Mac Finder to open it natively in Chrome.
